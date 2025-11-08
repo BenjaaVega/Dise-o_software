@@ -57,6 +57,8 @@ namespace Shin_Megami_Tensei.Manejo
                 return IManejoAccion.ActionResult.Continuar();
             }
             
+            string efectoCrudo = _habilidades.EffectDe(nombre) ?? string.Empty;
+
             if (EsSabbatma(nombre))
             {
                 var resultadoAccion = _invocar.ExecuteDesdeSabbatma(tablero, unidadActual, esJ1, turnos, costoMp, out bool invocacionOk);
@@ -69,8 +71,24 @@ namespace Shin_Megami_Tensei.Manejo
                 if (invocacionOk) _contadorK.Inc(esJ1);
                 return resultadoAccion;
             }
-            
-            var efecto = _habilidades.EffectDe(nombre) ?? string.Empty;
+
+            if (EsTetraja(nombre, efectoCrudo))
+            {
+                unidadActual.GastarMp(costoMp);
+                var propio = tablero.Propio(esJ1);
+                propio.AgregarEscudoTetraja();
+
+                var mensaje = $"{unidadActual.Nombre} usa {nombre}\nEl equipo queda protegido contra ataques letales de luz y oscuridad.";
+                _vista.ShowMessage(mensaje);
+
+                var (usarFullT, usarBlinkT, ganarBlinkT) = TurnosHelper.DecidirConsumo(turnos, HitOutcome.Damage);
+                TurnosHelper.AplicarConsumo(turnos, usarFullT, usarBlinkT, ganarBlinkT);
+                _vista.ShowTurnsConsumption(usarFullT, usarBlinkT, ganarBlinkT);
+                _contadorK.Inc(esJ1);
+                return IManejoAccion.ActionResult.Continuar();
+            }
+
+            var efecto = efectoCrudo;
             var tipo = RealizarCura.Clasificar(efecto);
             if (tipo != RealizarCura.HealKind.None)
             {
@@ -157,5 +175,14 @@ namespace Shin_Megami_Tensei.Manejo
 
         private static bool EsInvitacion(string nombreHabilidad) =>
             (nombreHabilidad ?? "").Trim().Equals("invitation", StringComparison.OrdinalIgnoreCase);
+
+        private static bool EsTetraja(string nombreHabilidad, string efecto)
+        {
+            var nombreNormalizado = (nombreHabilidad ?? string.Empty).Trim();
+            if (nombreNormalizado.Equals("Tetraja", StringComparison.OrdinalIgnoreCase)) return true;
+
+            return !string.IsNullOrWhiteSpace(efecto)
+                && efecto.IndexOf("prevents 1 light/dark instant kill", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
     }
 }

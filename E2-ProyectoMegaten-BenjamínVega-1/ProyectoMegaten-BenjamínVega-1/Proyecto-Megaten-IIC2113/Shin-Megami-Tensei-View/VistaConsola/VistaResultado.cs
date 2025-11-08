@@ -94,6 +94,14 @@ namespace Shin_Megami_Tensei_View
             };
             _io.WL($"{atacante} {accion} a {objetivo}");
 
+            var esOHKO = elemento == Elemento.Light || elemento == Elemento.Dark;
+            if (esOHKO && dano < 0)
+            {
+                _io.WL($"{atacante} ha fallado el ataque");
+                _io.WL($"{objetivo} termina con HP:{hpFinal}/{hpMax}");
+                return;
+            }
+
             switch (outcome)
             {
                 case HitOutcome.Weak:
@@ -123,7 +131,6 @@ namespace Shin_Megami_Tensei_View
                     return;
             }
 
-            var esOHKO = (elemento == Elemento.Light || elemento == Elemento.Dark);
             if (objetivoEliminado && esOHKO)
             {
                 _io.WL($"{objetivo} ha sido eliminado");

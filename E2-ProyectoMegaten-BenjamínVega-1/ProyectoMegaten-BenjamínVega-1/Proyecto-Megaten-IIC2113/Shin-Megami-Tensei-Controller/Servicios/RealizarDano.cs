@@ -101,7 +101,8 @@ namespace Shin_Megami_Tensei.Manejo.Services
             int numHits)
         {
             view.ShowMessage("");
-            bool esOhko = element == Elemento.Light || element == Elemento.Dark;
+            bool esOhko = InstaKillResolver.EsInstaKill(element, numHits);
+            var equipoObjetivo = t.Rival(esJ1);
 
             HitOutcome last = HitOutcome.Damage;
             for (int hit = 1; hit <= numHits; hit++)
@@ -110,10 +111,6 @@ namespace Shin_Megami_Tensei.Manejo.Services
                 last = res.Outcome.Outcome;
 
                 bool esUltimo = (hit == numHits);
-
-                int danoParaMostrar;
-                int hpFinalMostrar;
-                int hpMaxMostrar = esUltimo ? objetivo.HpMax : HP_NO_MOSTRAR;
 
                 int stat = element switch
                 {
@@ -124,6 +121,27 @@ namespace Shin_Megami_Tensei.Manejo.Services
                 int neutralSkill = Math.Max(0,
                     (int)Math.Floor(Math.Sqrt(Math.Max(0, stat * Math.Max(0, power))))
                 );
+
+                bool puedeResolverOhko = esOhko && (last is HitOutcome.Damage or HitOutcome.Weak or HitOutcome.Resist);
+                bool ohkoExitoso = false;
+                if (puedeResolverOhko)
+                {
+                    if (equipoObjetivo.ConsumirEscudoTetraja())
+                    {
+                        last = HitOutcome.Damage;
+                    }
+                    else
+                    {
+                        var umbral = InstaKillResolver.CalcularUmbral(objetivo, element);
+                        var puntaje = InstaKillResolver.CalcularPuntaje(actual, power);
+                        ohkoExitoso = puntaje >= umbral;
+                        if (!ohkoExitoso) last = HitOutcome.Damage;
+                    }
+                }
+
+                int hpMaxMostrar = esUltimo ? objetivo.HpMax : HP_NO_MOSTRAR;
+                int danoParaMostrar;
+                int hpFinalMostrar;
 
                 switch (last)
                 {
@@ -156,12 +174,21 @@ namespace Shin_Megami_Tensei.Manejo.Services
                     }
 
                     default:
-                        if (esOhko)
+                        if (puedeResolverOhko)
                         {
-                            danoParaMostrar = objetivo.Hp;
-                            objetivo.RecibirDano(objetivo.Hp);
-                            hpFinalMostrar  = 0;
-                            hpMaxMostrar    = objetivo.HpMax; 
+                            if (ohkoExitoso)
+                            {
+                                danoParaMostrar = objetivo.Hp;
+                                objetivo.RecibirDano(objetivo.Hp);
+                                hpFinalMostrar  = objetivo.Hp;
+                                hpMaxMostrar    = objetivo.HpMax;
+                            }
+                            else
+                            {
+                                danoParaMostrar = -1;
+                                hpFinalMostrar  = objetivo.Hp;
+                                hpMaxMostrar    = objetivo.HpMax;
+                            }
                         }
                         else
                         {
@@ -172,16 +199,17 @@ namespace Shin_Megami_Tensei.Manejo.Services
                         break;
                 }
 
+                bool objetivoEliminado = puedeResolverOhko && ohkoExitoso && !objetivo.EstaViva;
+
                 view.ShowElementalResolution(
                     actual.Nombre, objetivo.Nombre, element, last,
                     danoParaMostrar, hpFinalMostrar, hpMaxMostrar,
-                    objetivoEliminado: (esOhko && !objetivo.EstaViva)
+                    objetivoEliminado: objetivoEliminado
                 );
 
                 if (!objetivo.EstaViva && !objetivo.EsSamurai)
                 {
-                    var equipoRival = t.Rival(esJ1);
-                    equipoRival.BajarMuertoDeActivosAReserva(objetivo);
+                    equipoObjetivo.BajarMuertoDeActivosAReserva(objetivo);
                 }
             }
 

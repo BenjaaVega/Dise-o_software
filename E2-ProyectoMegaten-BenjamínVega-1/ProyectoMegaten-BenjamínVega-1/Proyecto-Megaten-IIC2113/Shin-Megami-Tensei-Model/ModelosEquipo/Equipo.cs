@@ -8,6 +8,7 @@
         public IReadOnlyList<IUnidad> Unidades => _unidades;
         
         private readonly Dictionary<IUnidad, int> _ordenArchivo;
+        private int _escudosTetraja;
         
         public Samurai Samurai => (Samurai)_unidades.Single(u => u != null && u.EsSamurai);
 
@@ -25,6 +26,21 @@
                 if (u != null) _ordenArchivo[u] = idx;
                 idx++;
             }
+        }
+
+        public bool TieneEscudoTetraja => _escudosTetraja > 0;
+
+        public void AgregarEscudoTetraja(int cantidad = 1)
+        {
+            if (cantidad <= 0) return;
+            _escudosTetraja += cantidad;
+        }
+
+        public bool ConsumirEscudoTetraja()
+        {
+            if (_escudosTetraja <= 0) return false;
+            _escudosTetraja--;
+            return true;
         }
 
         private void AsegurarCuatroActivosFijos()
