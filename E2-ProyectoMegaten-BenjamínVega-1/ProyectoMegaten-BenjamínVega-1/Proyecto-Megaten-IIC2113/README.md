@@ -1,0 +1,1 @@
+Mediante este documento dejo constancia de que para esta Entrega 1 hice uso de Inteligencia Artificial, con el fin de poder ordenar un poco el esquema Archivos/Carpetas, además hice uso de foros de StackOverflow, principalmente para el parseo de archivos json en c#  y tambíen para investigar sobre el uso de librerias y sus funciones.
