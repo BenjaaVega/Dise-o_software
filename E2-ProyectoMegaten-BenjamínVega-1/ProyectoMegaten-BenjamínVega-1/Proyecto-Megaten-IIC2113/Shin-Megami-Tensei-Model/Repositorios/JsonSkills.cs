@@ -14,6 +14,7 @@ namespace Shin_Megami_Tensei_Model.Repositorios
         private readonly Dictionary<string, int> _powers;
         private readonly Dictionary<string, string> _hits;
         private readonly Dictionary<string, string> _effect;
+        private readonly Dictionary<string, SkillTarget> _targets;
 
         public JsonSkills(string? rutaExplicita = null)
         {
@@ -21,7 +22,7 @@ namespace Shin_Megami_Tensei_Model.Repositorios
             var contenidoJson = File.Exists(ruta) ? File.ReadAllText(ruta) : "[]";
             var registros = JsonSerializer.Deserialize<List<DtoHabilidad>>(contenidoJson, ConfiguracionJson.Opciones) ?? new();
 
-            (_habilidades, _costos, _elementos, _powers, _hits, _effect) = ConstruirColecciones(registros);
+            (_habilidades, _costos, _elementos, _powers, _hits, _effect, _targets) = ConstruirColecciones(registros);
         }
 
         public bool Existe(string nombre) => _habilidades.Contains(nombre);
@@ -43,6 +44,9 @@ namespace Shin_Megami_Tensei_Model.Repositorios
         public string? EffectDe(string nombre) =>
             _effect.TryGetValue(nombre, out var e) ? e : null;
 
+        public SkillTarget? TargetDe(string nombre) =>
+            _targets.TryGetValue(nombre, out var t) ? t : (SkillTarget?)null;
+
         // ===== Internos =====
 
         private static (
@@ -51,7 +55,8 @@ namespace Shin_Megami_Tensei_Model.Repositorios
             Dictionary<string,Elemento> elementos,
             Dictionary<string,int> poderes,
             Dictionary<string,string> hits,
-            Dictionary<string,string> effect
+            Dictionary<string,string> effect,
+            Dictionary<string,SkillTarget> targets
         ) ConstruirColecciones(IEnumerable<DtoHabilidad> items)
         {
             var habilidades = new HashSet<string>(
@@ -68,6 +73,7 @@ namespace Shin_Megami_Tensei_Model.Repositorios
             var poderes   = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var hits      = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var effect    = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var targets   = new Dictionary<string, SkillTarget>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var it in items)
             {
@@ -84,9 +90,12 @@ namespace Shin_Megami_Tensei_Model.Repositorios
 
                 if (!string.IsNullOrWhiteSpace(it.Effect))
                     effect[nombre] = it.Effect!.Trim();
+
+                if (MapeadorTargets.IntentarMapear(it.Target, out var t))
+                    targets[nombre] = t;
             }
 
-            return (habilidades, costos, elementos, poderes, hits, effect);
+            return (habilidades, costos, elementos, poderes, hits, effect, targets);
         }
     }
 }

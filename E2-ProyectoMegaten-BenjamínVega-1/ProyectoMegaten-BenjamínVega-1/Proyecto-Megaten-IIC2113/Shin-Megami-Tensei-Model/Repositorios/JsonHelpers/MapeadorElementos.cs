@@ -19,6 +19,7 @@ namespace Shin_Megami_Tensei_Model.Repositorios.Ayudantes
                 case "force": elemento = Elemento.Force; return true;
                 case "light": elemento = Elemento.Light; return true;
                 case "dark":  elemento = Elemento.Dark;  return true;
+                case "almighty": elemento = Elemento.Almighty; return true;
                 default:      elemento = Elemento.Phys;  return true;
             }
         }
