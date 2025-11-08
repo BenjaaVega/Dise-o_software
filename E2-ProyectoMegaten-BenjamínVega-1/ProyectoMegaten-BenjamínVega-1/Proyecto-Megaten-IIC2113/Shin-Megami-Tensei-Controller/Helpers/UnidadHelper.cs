@@ -48,5 +48,18 @@ namespace Shin_Megami_Tensei.Manejo.Helpers
                 if (falta > 0) mCurar.Invoke(u, new object[] { falta });
             }
         }
+
+        public static void RecuperarMp(IUnidad unidad, int cantidad)
+        {
+            if (unidad is null || cantidad <= 0) return;
+
+            var pMp = unidad.GetType().GetProperty("Mp", BindingFlags.Public | BindingFlags.Instance);
+            if (pMp is not null && pMp.CanWrite)
+            {
+                int actual = unidad.Mp;
+                int nuevo = Math.Min(unidad.MpMax, actual + cantidad);
+                pMp.SetValue(unidad, nuevo);
+            }
+        }
     }
 }
