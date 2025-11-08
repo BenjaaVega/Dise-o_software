@@ -14,8 +14,23 @@ namespace Shin_Megami_Tensei.Manejo.Helpers
         {
             if (outcomes is null || outcomes.Count == 0) return (0, 0, 0);
 
-            var outcome = ConsolidarResultados(outcomes);
-            return DecidirConsumoConSaldo(turnos.Full, turnos.Blinking, outcome);
+            int full = turnos.Full;
+            int blink = turnos.Blinking;
+            int totalFull = 0, totalBlink = 0, totalGain = 0;
+
+            foreach (var outcome in outcomes)
+            {
+                var (usedFull, usedBlink, gainedBlink) = DecidirConsumoConSaldo(full, blink, outcome);
+                totalFull += usedFull;
+                totalBlink += usedBlink;
+                totalGain += gainedBlink;
+
+                full = Math.Max(0, full - usedFull);
+                blink = Math.Max(0, blink - usedBlink);
+                blink += gainedBlink;
+            }
+
+            return (totalFull, totalBlink, totalGain);
         }
 
         private static (int usedFull, int usedBlink, int gainedBlink) DecidirConsumoConSaldo(int full, int blink, HitOutcome outcome)
@@ -65,44 +80,5 @@ namespace Shin_Megami_Tensei.Manejo.Helpers
             if (usedBlink > 0)  turnos.ConsumirBlinking(usedBlink);
             if (gainedBlink > 0) turnos.AgregarBlinking(gainedBlink);
         }
-
-        private static HitOutcome ConsolidarResultados(IReadOnlyList<HitOutcome> outcomes)
-        {
-            bool anyWeak = false;
-            bool anyResist = false;
-            bool anyNull = false;
-            bool anyReflect = false;
-            bool anyDrain = false;
-
-            foreach (var outcome in outcomes)
-            {
-                switch (outcome)
-                {
-                    case HitOutcome.Weak:
-                        anyWeak = true;
-                        break;
-                    case HitOutcome.Resist:
-                        anyResist = true;
-                        break;
-                    case HitOutcome.Nullified:
-                        anyNull = true;
-                        break;
-                    case HitOutcome.Reflected:
-                        anyReflect = true;
-                        break;
-                    case HitOutcome.Drained:
-                        anyDrain = true;
-                        break;
-                }
-            }
-
-            if (anyReflect) return HitOutcome.Reflected;
-            if (anyDrain)   return HitOutcome.Drained;
-            if (anyNull)    return HitOutcome.Nullified;
-            if (anyResist)  return HitOutcome.Resist;
-            if (anyWeak)    return HitOutcome.Weak;
-            return HitOutcome.Damage;
-        }
     }
 }
-
