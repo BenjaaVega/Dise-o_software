@@ -11,8 +11,10 @@ namespace Shin_Megami_Tensei_Model.Repositorios
 
         Elemento? ElementoDe(string nombre);
         int? PowerDe(string nombre);
-        
-        string? HitsDe(string nombre);    
-        string? EffectDe(string nombre);   
+
+        string? HitsDe(string nombre);
+        string? EffectDe(string nombre);
+
+        SkillTarget? TargetDe(string nombre);
     }
 }

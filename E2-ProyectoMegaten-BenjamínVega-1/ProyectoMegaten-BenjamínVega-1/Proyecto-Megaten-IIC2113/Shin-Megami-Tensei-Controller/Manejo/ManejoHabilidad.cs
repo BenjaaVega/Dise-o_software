@@ -1,4 +1,6 @@
-﻿using Shin_Megami_Tensei_View;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Shin_Megami_Tensei_View;
 using Shin_Megami_Tensei_Model.Combate;
 using Shin_Megami_Tensei_Model.ModelosEquipo;
 using Shin_Megami_Tensei_Model.Repositorios;
@@ -104,9 +106,7 @@ namespace Shin_Megami_Tensei.Manejo
                 }
                 return IManejoAccion.ActionResult.Continuar();
             }
-            var enemigo = esJ1 ? tablero.J2 : tablero.J1;
-            var objetivo = SelectorObjetivo.ElegirEnemigoActivo(_vista, enemigo, unidadActual.Nombre);
-            if (objetivo is null) return IManejoAccion.ActionResult.Continuar();
+            var targetKind = _habilidades.TargetDe(nombre) ?? SkillTarget.Single;
 
             var elementoOpcional = _habilidades.ElementoDe(nombre);
             var poderOpcional    = _habilidades.PowerDe(nombre);
@@ -115,20 +115,147 @@ namespace Shin_Megami_Tensei.Manejo
                 _vista.ShowMessage($"La habilidad '{nombre}' no trae 'type' o 'power' en el JSON.");
                 return IManejoAccion.ActionResult.Continuar();
             }
+
             var elemento = elementoOpcional.Value;
             int poder    = poderOpcional.Value;
 
             var (minGolpes, maxGolpes) = HitsParser.Parse(_habilidades.HitsDe(nombre) ?? _habilidades.EffectDe(nombre));
-            int rangoGolpes   = Math.Max(1, (maxGolpes - minGolpes + 1));
+            int rangoGolpes    = Math.Max(1, (maxGolpes - minGolpes + 1));
             int desplazamiento = _contadorK.Get(esJ1) % rangoGolpes;
             int cantidadGolpes = Math.Max(1, minGolpes + desplazamiento);
 
-            unidadActual.GastarMp(costoMp);
-            var ultimoResultadoGolpe = RealizarDano.HacerAtaqueMultiHit(_vista, _calcularDano, tablero, esJ1, unidadActual, objetivo, nombre, elemento, poder, cantidadGolpes);
+            var drainKind = ClasificarDrain(efecto);
 
-            var (usarFull2, usarBlink2, ganarBlink2) = TurnosHelper.DecidirConsumo(turnos, ultimoResultadoGolpe);
-            TurnosHelper.AplicarConsumo(turnos, usarFull2, usarBlink2, ganarBlink2);
-            _vista.ShowTurnsConsumption(usarFull2, usarBlink2, ganarBlink2);
+            if (drainKind == DrainKind.Mp && (targetKind == SkillTarget.Single || targetKind == SkillTarget.Unknown))
+            {
+                var enemigo = esJ1 ? tablero.J2 : tablero.J1;
+                var objetivoDrain = SelectorObjetivo.ElegirEnemigoActivo(_vista, enemigo, unidadActual.Nombre);
+                if (objetivoDrain is null) return IManejoAccion.ActionResult.Continuar();
+
+                unidadActual.GastarMp(costoMp);
+
+                var resultadoDrain = _calcularDano.DanoHabilidad(unidadActual, objetivoDrain, nombre, elemento, poder);
+                var outcomeDrain = resultadoDrain.Outcome.Outcome;
+                int drenado = Math.Max(0, resultadoDrain.Damage);
+                if (outcomeDrain is HitOutcome.Nullified or HitOutcome.Reflected or HitOutcome.Drained)
+                    drenado = 0;
+
+                int mpReducido = Math.Min(objetivoDrain.Mp, drenado);
+                if (mpReducido > 0) objetivoDrain.GastarMp(mpReducido);
+                UnidadHelper.RecuperarMp(unidadActual, mpReducido);
+
+                var lineas = new List<string>
+                {
+                    $"{unidadActual.Nombre} drena MP de {objetivoDrain.Nombre}",
+                    mpReducido > 0
+                        ? $"{objetivoDrain.Nombre} pierde {mpReducido} de MP"
+                        : $"{objetivoDrain.Nombre} resiste el drenaje de MP",
+                    $"{objetivoDrain.Nombre} termina con MP:{objetivoDrain.Mp}/{objetivoDrain.MpMax}",
+                    $"{unidadActual.Nombre} termina con MP:{unidadActual.Mp}/{unidadActual.MpMax}"
+                };
+                _vista.ShowMessage(string.Join("\n", lineas));
+
+                var outcomesDrain = new List<HitOutcome> { outcomeDrain };
+                var (usarFullDrain, usarBlinkDrain, ganarBlinkDrain) = TurnosHelper.DecidirConsumo(turnos, outcomesDrain);
+                TurnosHelper.AplicarConsumo(turnos, usarFullDrain, usarBlinkDrain, ganarBlinkDrain);
+                _vista.ShowTurnsConsumption(usarFullDrain, usarBlinkDrain, ganarBlinkDrain);
+
+                _contadorK.Inc(esJ1);
+                return IManejoAccion.ActionResult.Continuar();
+            }
+
+            bool esSingleTarget = targetKind == SkillTarget.Single
+                                   || targetKind == SkillTarget.Unknown
+                                   || targetKind == SkillTarget.SingleAlly;
+
+            if (esSingleTarget)
+            {
+                var enemigo = esJ1 ? tablero.J2 : tablero.J1;
+                var objetivo = SelectorObjetivo.ElegirEnemigoActivo(_vista, enemigo, unidadActual.Nombre);
+                if (objetivo is null) return IManejoAccion.ActionResult.Continuar();
+
+                unidadActual.GastarMp(costoMp);
+
+                var outcomes = new List<HitOutcome>();
+                var danos = new List<int>();
+                RealizarDano.HacerAtaqueMultiHit(
+                    _vista, _calcularDano, tablero, esJ1, unidadActual, objetivo,
+                    nombre, elemento, poder, cantidadGolpes, outcomes, danos);
+
+                var danosPorObjetivo = new Dictionary<IUnidad, int>();
+                int totalDano = danos.Sum();
+                if (totalDano > 0) danosPorObjetivo[objetivo] = totalDano;
+                AplicarDrain(drainKind, unidadActual, danosPorObjetivo);
+
+                var (usarFull2, usarBlink2, ganarBlink2) = TurnosHelper.DecidirConsumo(turnos, outcomes);
+                TurnosHelper.AplicarConsumo(turnos, usarFull2, usarBlink2, ganarBlink2);
+                _vista.ShowTurnsConsumption(usarFull2, usarBlink2, ganarBlink2);
+
+                _contadorK.Inc(esJ1);
+
+                if (CombateHelper.EquipoRivalDerrotado(tablero, esJ1))
+                {
+                    var (ganador, tag) = CombateHelper.NombreEquipo(tablero, esJ1);
+                    return IManejoAccion.ActionResult.Fin(ganador, tag);
+                }
+
+                return IManejoAccion.ActionResult.Continuar();
+            }
+
+            var ordenObjetivos = ConstruirOrdenObjetivos(tablero, esJ1, unidadActual);
+            var objetivos = SeleccionarObjetivos(targetKind, ordenObjetivos);
+            if (objetivos.Count == 0)
+            {
+                _vista.ShowMessage("No hay objetivos.");
+                return IManejoAccion.ActionResult.Continuar();
+            }
+
+            var hitsPorObjetivo = DistribuirGolpes(objetivos, targetKind, cantidadGolpes, desplazamiento);
+            if (!hitsPorObjetivo.Values.Any(v => v > 0))
+            {
+                _vista.ShowMessage("No hay objetivos.");
+                return IManejoAccion.ActionResult.Continuar();
+            }
+
+            unidadActual.GastarMp(costoMp);
+
+            var resultados = new List<HitOutcome>();
+            var danosTotales = new List<int>();
+            var danoPorObjetivo = new Dictionary<IUnidad, int>();
+            bool esPrimero = true;
+            var ultimoReflector = DeterminarUltimoReflector(objetivos, hitsPorObjetivo, elemento);
+
+            foreach (var objetivo in objetivos)
+            {
+                if (!hitsPorObjetivo.TryGetValue(objetivo, out int hits) || hits <= 0) continue;
+
+                int indiceInicio = danosTotales.Count;
+                bool objetivoEsRival = PerteneceA(tablero.Rival(esJ1), objetivo);
+                bool parametroEsJ1 = objetivoEsRival ? esJ1 : !esJ1;
+
+                RealizarDano.HacerAtaqueMultiHit(
+                    _vista, _calcularDano, tablero, parametroEsJ1, unidadActual, objetivo,
+                    nombre, elemento, poder, hits, resultados, danosTotales,
+                    showSeparator: esPrimero,
+                    mostrarHpReflejo: ReferenceEquals(objetivo, ultimoReflector));
+
+                esPrimero = false;
+
+                int danoAcumulado = danosTotales.Skip(indiceInicio).Sum();
+                if (danoAcumulado > 0)
+                {
+                    if (danoPorObjetivo.TryGetValue(objetivo, out var acumulado))
+                        danoPorObjetivo[objetivo] = acumulado + danoAcumulado;
+                    else
+                        danoPorObjetivo[objetivo] = danoAcumulado;
+                }
+            }
+
+            AplicarDrain(drainKind, unidadActual, danoPorObjetivo);
+
+            var (usarFullMulti, usarBlinkMulti, ganarBlinkMulti) = TurnosHelper.DecidirConsumo(turnos, resultados);
+            TurnosHelper.AplicarConsumo(turnos, usarFullMulti, usarBlinkMulti, ganarBlinkMulti);
+            _vista.ShowTurnsConsumption(usarFullMulti, usarBlinkMulti, ganarBlinkMulti);
 
             _contadorK.Inc(esJ1);
 
@@ -157,5 +284,157 @@ namespace Shin_Megami_Tensei.Manejo
 
         private static bool EsInvitacion(string nombreHabilidad) =>
             (nombreHabilidad ?? "").Trim().Equals("invitation", StringComparison.OrdinalIgnoreCase);
+
+        private static DrainKind ClasificarDrain(string efecto)
+        {
+            if (string.IsNullOrWhiteSpace(efecto)) return DrainKind.None;
+
+            var texto = efecto.ToLowerInvariant().Replace('’', '\'');
+            bool incluyeHp = texto.Contains("drains the enemy's hp") || texto.Contains("hp/mp");
+            bool incluyeMp = texto.Contains("drains the enemy's mp") || texto.Contains("hp/mp");
+
+            return (incluyeHp, incluyeMp) switch
+            {
+                (true, true)   => DrainKind.HpMp,
+                (true, false)  => DrainKind.Hp,
+                (false, true)  => DrainKind.Mp,
+                _              => DrainKind.None
+            };
+        }
+
+        private static List<(IUnidad unidad, TargetGroup grupo)> ConstruirOrdenObjetivos(Tablero tablero, bool esJ1, IUnidad actual)
+        {
+            var lista = new List<(IUnidad, TargetGroup)>();
+            var rival = tablero.Rival(esJ1);
+            lista.AddRange(rival.Unidades.Take(Equipo.ActiveSlots)
+                .Where(u => u != null && u.EstaViva)
+                .Select(u => (u!, TargetGroup.EnemyField)));
+
+            lista.AddRange(rival.Unidades.Skip(Equipo.ActiveSlots)
+                .Where(u => u != null && u.EstaViva)
+                .OrderBy(rival.OrdenEnArchivoDe)
+                .Select(u => (u!, TargetGroup.EnemyReserve)));
+
+            var propio = tablero.Propio(esJ1);
+            lista.AddRange(propio.Unidades.Take(Equipo.ActiveSlots)
+                .Where(u => u != null && !ReferenceEquals(u, actual) && u.EstaViva)
+                .Select(u => (u!, TargetGroup.AllyField)));
+
+            lista.AddRange(propio.Unidades.Skip(Equipo.ActiveSlots)
+                .Where(u => u != null && u.EstaViva)
+                .OrderBy(propio.OrdenEnArchivoDe)
+                .Select(u => (u!, TargetGroup.AllyReserve)));
+
+            if (actual.EstaViva)
+                lista.Add((actual, TargetGroup.Self));
+
+            return lista;
+        }
+
+        private static List<IUnidad> SeleccionarObjetivos(SkillTarget target, List<(IUnidad unidad, TargetGroup grupo)> orden)
+        {
+            return target switch
+            {
+                SkillTarget.AllEnemies => orden
+                    .Where(t => t.grupo is TargetGroup.EnemyField or TargetGroup.EnemyReserve)
+                    .Select(t => t.unidad)
+                    .ToList(),
+                SkillTarget.MultiEnemies => orden
+                    .Where(t => t.grupo is TargetGroup.EnemyField or TargetGroup.EnemyReserve)
+                    .Select(t => t.unidad)
+                    .ToList(),
+                SkillTarget.Universal => orden.Select(t => t.unidad).ToList(),
+                SkillTarget.Party => orden
+                    .Where(t => t.grupo is TargetGroup.AllyField or TargetGroup.AllyReserve or TargetGroup.Self)
+                    .Select(t => t.unidad)
+                    .ToList(),
+                _ => orden
+                    .Where(t => t.grupo is TargetGroup.EnemyField or TargetGroup.EnemyReserve)
+                    .Select(t => t.unidad)
+                    .ToList()
+            };
+        }
+
+        private static Dictionary<IUnidad, int> DistribuirGolpes(IReadOnlyList<IUnidad> objetivos, SkillTarget target, int totalGolpes, int desplazamiento)
+        {
+            var distribucion = objetivos.ToDictionary(obj => obj, _ => 0);
+            if (objetivos.Count == 0) return distribucion;
+
+            switch (target)
+            {
+                case SkillTarget.MultiEnemies:
+                {
+                    int inicio = desplazamiento % Math.Max(1, objetivos.Count);
+                    for (int i = 0; i < totalGolpes; i++)
+                    {
+                        var objetivo = objetivos[(inicio + i) % objetivos.Count];
+                        distribucion[objetivo]++;
+                    }
+                    break;
+                }
+                case SkillTarget.AllEnemies:
+                case SkillTarget.Universal:
+                    foreach (var objetivo in objetivos)
+                        distribucion[objetivo] = 1;
+                    break;
+                default:
+                    foreach (var objetivo in objetivos)
+                        distribucion[objetivo] = Math.Max(1, totalGolpes);
+                    break;
+            }
+
+            return distribucion;
+        }
+
+        private static IUnidad? DeterminarUltimoReflector(IEnumerable<IUnidad> objetivos, IDictionary<IUnidad, int> hitsPorObjetivo, Elemento elemento)
+        {
+            IUnidad? ultimo = null;
+            foreach (var objetivo in objetivos)
+            {
+                if (!hitsPorObjetivo.TryGetValue(objetivo, out var hits) || hits <= 0) continue;
+                if (objetivo.Affinities.AfinidadDe(elemento) == Afinidad.Repel)
+                    ultimo = objetivo;
+            }
+            return ultimo;
+        }
+
+        private static bool PerteneceA(Equipo equipo, IUnidad unidad) =>
+            equipo.Unidades.Any(u => ReferenceEquals(u, unidad));
+
+        private static void AplicarDrain(DrainKind drainKind, IUnidad usuario, IDictionary<IUnidad, int> danosPorObjetivo)
+        {
+            if (drainKind == DrainKind.None || danosPorObjetivo.Count == 0) return;
+
+            if (drainKind is DrainKind.Hp or DrainKind.HpMp)
+            {
+                int total = danosPorObjetivo.Values.Sum();
+                if (total > 0) UnidadHelper.CurarUnidad(usuario, total);
+            }
+
+            if (drainKind is DrainKind.Mp or DrainKind.HpMp)
+            {
+                int totalMp = 0;
+                foreach (var kvp in danosPorObjetivo)
+                {
+                    int cantidad = Math.Max(0, kvp.Value);
+                    int reducible = Math.Min(kvp.Key.Mp, cantidad);
+                    if (reducible <= 0) continue;
+                    kvp.Key.GastarMp(reducible);
+                    totalMp += reducible;
+                }
+                if (totalMp > 0) UnidadHelper.RecuperarMp(usuario, totalMp);
+            }
+        }
+
+        private enum DrainKind { None, Hp, Mp, HpMp }
+
+        private enum TargetGroup
+        {
+            EnemyField,
+            EnemyReserve,
+            AllyField,
+            AllyReserve,
+            Self
+        }
     }
 }

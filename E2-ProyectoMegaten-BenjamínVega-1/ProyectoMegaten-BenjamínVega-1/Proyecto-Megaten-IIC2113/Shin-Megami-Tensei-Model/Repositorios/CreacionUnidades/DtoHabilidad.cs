@@ -16,5 +16,7 @@ namespace Shin_Megami_Tensei_Model.Repositorios.DTO
 
         [JsonPropertyName("Hits")]    public string? Hits { get; set; }
         [JsonPropertyName("Effect")]  public string? Effect { get; set; }
+
+        [JsonPropertyName("target")]  public string? Target { get; set; }
     }
 }

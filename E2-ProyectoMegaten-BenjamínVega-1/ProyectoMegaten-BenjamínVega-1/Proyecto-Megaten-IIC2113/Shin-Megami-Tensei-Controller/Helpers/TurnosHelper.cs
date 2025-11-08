@@ -1,4 +1,5 @@
-﻿using Shin_Megami_Tensei_Model.Combate;
+﻿using System.Collections.Generic;
+using Shin_Megami_Tensei_Model.Combate;
 
 namespace Shin_Megami_Tensei.Manejo.Helpers
 {
@@ -6,9 +7,35 @@ namespace Shin_Megami_Tensei.Manejo.Helpers
     {
         public static (int usedFull, int usedBlink, int gainedBlink) DecidirConsumo(Turnos turnos, HitOutcome outcome)
         {
-            int usedFull = 0, usedBlink = 0, gainedBlink = 0;
+            return DecidirConsumoConSaldo(turnos.Full, turnos.Blinking, outcome);
+        }
+
+        public static (int usedFull, int usedBlink, int gainedBlink) DecidirConsumo(Turnos turnos, IReadOnlyList<HitOutcome> outcomes)
+        {
+            if (outcomes is null || outcomes.Count == 0) return (0, 0, 0);
+
             int full = turnos.Full;
             int blink = turnos.Blinking;
+            int totalFull = 0, totalBlink = 0, totalGain = 0;
+
+            foreach (var outcome in outcomes)
+            {
+                var (usedFull, usedBlink, gainedBlink) = DecidirConsumoConSaldo(full, blink, outcome);
+                totalFull += usedFull;
+                totalBlink += usedBlink;
+                totalGain += gainedBlink;
+
+                full = Math.Max(0, full - usedFull);
+                blink = Math.Max(0, blink - usedBlink);
+                blink += gainedBlink;
+            }
+
+            return (totalFull, totalBlink, totalGain);
+        }
+
+        private static (int usedFull, int usedBlink, int gainedBlink) DecidirConsumoConSaldo(int full, int blink, HitOutcome outcome)
+        {
+            int usedFull = 0, usedBlink = 0, gainedBlink = 0;
 
             switch (outcome)
             {

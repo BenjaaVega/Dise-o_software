@@ -2,5 +2,13 @@
 
 public enum Elemento
 {
-    Phys, Gun, Fire, Ice, Elec, Force, Light, Dark
+    Phys,
+    Gun,
+    Fire,
+    Ice,
+    Elec,
+    Force,
+    Light,
+    Dark,
+    Almighty
 }

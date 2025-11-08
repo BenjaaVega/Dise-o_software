@@ -35,9 +35,10 @@ public sealed class CalcularDano : ICalcularDano
     {
         int stat = elem switch
         {
-            Elemento.Phys => atacante.Stats.Str,
-            Elemento.Gun  => atacante.Stats.Skl,
-            _             => atacante.Stats.Mag
+            Elemento.Phys     => atacante.Stats.Str,
+            Elemento.Gun      => atacante.Stats.Skl,
+            Elemento.Almighty => atacante.Stats.Mag,
+            _                 => atacante.Stats.Mag
         };
         
         double raw = Math.Sqrt(Math.Max(0, stat * Math.Max(0, power)));

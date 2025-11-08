@@ -1,4 +1,5 @@
-﻿using Shin_Megami_Tensei_View;
+﻿using System.Collections.Generic;
+using Shin_Megami_Tensei_View;
 using Shin_Megami_Tensei_Model.Combate;
 using Shin_Megami_Tensei_Model.ModelosEquipo;
 
@@ -98,9 +99,13 @@ namespace Shin_Megami_Tensei.Manejo.Services
             string skillName,
             Elemento element,
             int power,
-            int numHits)
+            int numHits,
+            List<HitOutcome>? outcomesCollector = null,
+            List<int>? damageCollector = null,
+            bool showSeparator = true,
+            bool mostrarHpReflejo = true)
         {
-            view.ShowMessage("");
+            if (showSeparator) view.ShowMessage("");
             bool esOhko = element == Elemento.Light || element == Elemento.Dark;
 
             HitOutcome last = HitOutcome.Damage;
@@ -108,6 +113,8 @@ namespace Shin_Megami_Tensei.Manejo.Services
             {
                 var res = calc.DanoHabilidad(actual, objetivo, skillName, element, power);
                 last = res.Outcome.Outcome;
+
+                outcomesCollector?.Add(last);
 
                 bool esUltimo = (hit == numHits);
 
@@ -117,9 +124,10 @@ namespace Shin_Megami_Tensei.Manejo.Services
 
                 int stat = element switch
                 {
-                    Elemento.Phys => actual.Stats.Str,
-                    Elemento.Gun  => actual.Stats.Skl,
-                    _             => actual.Stats.Mag
+                    Elemento.Phys     => actual.Stats.Str,
+                    Elemento.Gun      => actual.Stats.Skl,
+                    Elemento.Almighty => actual.Stats.Mag,
+                    _                 => actual.Stats.Mag
                 };
                 int neutralSkill = Math.Max(0,
                     (int)Math.Floor(Math.Sqrt(Math.Max(0, stat * Math.Max(0, power))))
@@ -136,7 +144,7 @@ namespace Shin_Megami_Tensei.Manejo.Services
                         actual.RecibirDano(neutralSkill);
                         danoParaMostrar = neutralSkill;
                         hpFinalMostrar  = actual.Hp;
-                        hpMaxMostrar    = esUltimo ? actual.HpMax : HP_NO_MOSTRAR;
+                        hpMaxMostrar    = (!mostrarHpReflejo || !esUltimo) ? HP_NO_MOSTRAR : actual.HpMax;
                         break;
 
                     case HitOutcome.Drained:
@@ -171,6 +179,8 @@ namespace Shin_Megami_Tensei.Manejo.Services
                         }
                         break;
                 }
+
+                damageCollector?.Add(danoParaMostrar);
 
                 view.ShowElementalResolution(
                     actual.Nombre, objetivo.Nombre, element, last,
