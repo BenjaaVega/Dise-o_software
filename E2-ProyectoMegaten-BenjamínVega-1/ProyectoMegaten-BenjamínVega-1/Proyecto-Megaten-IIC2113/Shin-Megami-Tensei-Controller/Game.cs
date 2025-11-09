@@ -29,6 +29,17 @@ public class Game
 
     public void Play()
     {
+        if (_view is VistaJuegoGui gui)
+        {
+            gui.Run(PlayCore);
+            return;
+        }
+
+        PlayCore();
+    }
+
+    private void PlayCore()
+    {
         var parser                 = new ParserArchivoEquipos();
         var repositorioHabilidades = new JsonSkills();
         var repositorioUnidades    = new JsonUnidades();
