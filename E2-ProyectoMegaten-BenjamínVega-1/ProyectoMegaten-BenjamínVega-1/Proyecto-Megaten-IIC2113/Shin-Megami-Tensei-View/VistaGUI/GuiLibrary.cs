@@ -205,33 +205,29 @@ internal sealed class GuiLibrary
         if (Directory.Exists(direct))
             yield return direct;
 
-        IEnumerable<string> subdirectories;
         try
         {
-            subdirectories = Directory.EnumerateDirectories(dir.FullName, "*", SearchOption.TopDirectoryOnly)
-                                      .ToArray();
+            foreach (var sub in Directory.EnumerateDirectories(dir.FullName, "*", SearchOption.TopDirectoryOnly))
+            {
+                var name = Path.GetFileName(sub);
+                if (string.Equals(name, "GuiLIB", StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return sub;
+                    continue;
+                }
+
+                if (name.IndexOf("View", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("GUI", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var nested = Path.Combine(sub, "GuiLIB");
+                    if (Directory.Exists(nested))
+                        yield return nested;
+                }
+            }
         }
         catch
         {
-            yield break;
-        }
-
-        foreach (var sub in subdirectories)
-        {
-            var name = Path.GetFileName(sub);
-            if (string.Equals(name, "GuiLIB", StringComparison.OrdinalIgnoreCase))
-            {
-                yield return sub;
-                continue;
-            }
-
-            if (name.IndexOf("View", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                name.IndexOf("GUI", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                var nested = Path.Combine(sub, "GuiLIB");
-                if (Directory.Exists(nested))
-                    yield return nested;
-            }
+            // Ignoramos excepciones causadas por directorios inaccesibles.
         }
     }
 
