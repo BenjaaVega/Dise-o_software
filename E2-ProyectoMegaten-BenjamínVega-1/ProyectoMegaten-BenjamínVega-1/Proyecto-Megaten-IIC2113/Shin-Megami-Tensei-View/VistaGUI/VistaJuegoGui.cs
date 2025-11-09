@@ -19,6 +19,7 @@ public sealed class VistaJuegoGui : IVistaJuego
     private readonly GuiStateModel? _state;
     private readonly List<OptionEntry> _currentOptions = new();
     private readonly Dictionary<string, OptionEntry> _optionLookup = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, OptionEntry> _unitLookup = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _sync = new();
 
     public VistaJuegoGui(View? fallbackView = null)
@@ -124,6 +125,7 @@ public sealed class VistaJuegoGui : IVistaJuego
 
         _state!.Player1.UpdateBoard(snapshot?.J1Slots);
         _state.Player2.UpdateBoard(snapshot?.J2Slots);
+        _state.UpdateKnownUnits(snapshot);
         Refresh();
     }
 
@@ -198,6 +200,7 @@ public sealed class VistaJuegoGui : IVistaJuego
         opts.Add(new OptionEntry(string.Create(CultureInfo.InvariantCulture, $"{menu.CancelIndex + 1}-Cancelar"), menu.CancelIndex + 1));
 
         SetMenu(string.Create(CultureInfo.InvariantCulture, $"Seleccione un objetivo para {atacanteNombre}"), opts);
+        RegisterTargetAliases(items, opts);
         var value = WaitForOptionSelection(menu.CancelIndex + 1);
         ClearMenu();
         return value;
@@ -374,6 +377,7 @@ public sealed class VistaJuegoGui : IVistaJuego
 
         _currentOptions.Clear();
         _optionLookup.Clear();
+        _unitLookup.Clear();
         _state!.ClearOptions();
 
         if (!string.IsNullOrWhiteSpace(prompt))
@@ -387,6 +391,7 @@ public sealed class VistaJuegoGui : IVistaJuego
             _currentOptions.Add(entry);
             _optionLookup[Normalize(entry.Label)] = entry;
             _state.Options.Add(entry.Label);
+            RegisterAliasesFromLabel(entry);
         }
 
         Refresh();
@@ -415,7 +420,115 @@ public sealed class VistaJuegoGui : IVistaJuego
                         return match.Value;
                 }
             }
+
+            if (_library.TryGetUnitInfo(clicked, out var unitName, out var playerId) &&
+                TryResolveUnitOption(unitName, playerId, out var option))
+            {
+                return option.Value;
+            }
         }
+    }
+
+    private void RegisterTargetAliases(IReadOnlyList<ItemObjetivo> items, IReadOnlyList<OptionEntry> entries)
+    {
+        if (!IsGuiReady || _state is null) return;
+
+        int limit = System.Math.Min(items.Count, entries.Count);
+        for (int i = 0; i < limit; i++)
+        {
+            RegisterUnitAliasesForName(items[i].Nombre, entries[i]);
+        }
+    }
+
+    private void RegisterAliasesFromLabel(OptionEntry entry)
+    {
+        if (!IsGuiReady || _state is null) return;
+        if (string.IsNullOrWhiteSpace(entry.Label)) return;
+
+        foreach (var name in _state.GetKnownUnitNames())
+        {
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            if (entry.Label.Contains(name, StringComparison.OrdinalIgnoreCase))
+            {
+                RegisterUnitAliasesForName(name, entry);
+            }
+        }
+    }
+
+    private void RegisterUnitAliasesForName(string? name, OptionEntry entry)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        RegisterUnitAlias(name, null, entry);
+        if (_state is null) return;
+
+        var owners = _state.GetOwnersOf(name);
+        foreach (var owner in owners)
+        {
+            RegisterUnitAlias(name, owner, entry);
+        }
+    }
+
+    private void RegisterUnitAlias(string name, int? playerId, OptionEntry entry)
+    {
+        var key = CreateUnitKey(name, playerId);
+        if (string.IsNullOrEmpty(key)) return;
+        _unitLookup[key] = entry;
+    }
+
+    private bool TryResolveUnitOption(string? name, int? playerId, out OptionEntry entry)
+    {
+        entry = default;
+        if (string.IsNullOrWhiteSpace(name)) return false;
+
+        if (playerId.HasValue && _unitLookup.TryGetValue(CreateUnitKey(name, playerId), out entry))
+        {
+            return true;
+        }
+
+        if (_unitLookup.TryGetValue(CreateUnitKey(name, null), out entry))
+        {
+            return true;
+        }
+
+        if (_state is not null)
+        {
+            var owners = _state.GetOwnersOf(name);
+            foreach (var owner in owners)
+            {
+                if (_unitLookup.TryGetValue(CreateUnitKey(name, owner), out entry))
+                {
+                    return true;
+                }
+            }
+        }
+
+        var candidate = _currentOptions.FirstOrDefault(
+            o => !string.IsNullOrWhiteSpace(o.Label) &&
+                 o.Label.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(candidate.Label))
+        {
+            RegisterUnitAlias(name, playerId, candidate);
+            entry = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string CreateUnitKey(string name, int? playerId)
+    {
+        var normalized = Normalize(name);
+        if (string.IsNullOrEmpty(normalized))
+        {
+            return string.Empty;
+        }
+
+        var suffix = playerId.HasValue
+            ? playerId.Value.ToString(CultureInfo.InvariantCulture)
+            : "*";
+        return normalized + "#" + suffix;
     }
 
     private void ClearMenu()
@@ -423,6 +536,7 @@ public sealed class VistaJuegoGui : IVistaJuego
         if (!IsGuiReady) return;
         _currentOptions.Clear();
         _optionLookup.Clear();
+        _unitLookup.Clear();
         _state!.ClearOptions();
         Refresh();
     }
@@ -444,8 +558,8 @@ public sealed class VistaJuegoGui : IVistaJuego
         }
     }
 
-    private static string Normalize(string text)
-        => text.Trim();
+    private static string Normalize(string? text)
+        => string.IsNullOrWhiteSpace(text) ? string.Empty : text.Trim();
 
     private static int? ExtractLeadingNumber(string text)
     {

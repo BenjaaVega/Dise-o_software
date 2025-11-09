@@ -42,7 +42,8 @@ internal sealed class GuiLibrary
         _update = SmtGuiType.GetMethod("Update", BindingFlags.Instance | BindingFlags.Public)
                    ?? throw new InvalidOperationException("La clase SMTGUI no expone el método Update.");
         _showMessage = SmtGuiType.GetMethod("ShowEndGameMessage", BindingFlags.Instance | BindingFlags.Public)
-                       ?? throw new InvalidOperationException("La clase SMTGUI no expone el método ShowEndGameMessage.");
+                       ?? SmtGuiType.GetMethod("ShowMessage", BindingFlags.Instance | BindingFlags.Public)
+                       ?? throw new InvalidOperationException("La clase SMTGUI no expone los métodos de mensajes esperados.");
         _getClicked = SmtGuiType.GetMethod("GetClickedElement", BindingFlags.Instance | BindingFlags.Public)
                       ?? throw new InvalidOperationException("La clase SMTGUI no expone el método GetClickedElement.");
 

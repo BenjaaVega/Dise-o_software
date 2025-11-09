@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Shin_Megami_Tensei_Model.Presentacion.VistaModelos;
 
@@ -5,6 +6,8 @@ namespace Shin_Megami_Tensei_View.VistaGUI;
 
 internal sealed class GuiStateModel
 {
+    private readonly Dictionary<string, HashSet<int>> _unitOwners = new(StringComparer.OrdinalIgnoreCase);
+
     public GuiStateModel()
     {
         Player1 = new GuiPlayerState();
@@ -20,8 +23,49 @@ internal sealed class GuiStateModel
     public int Turns { get; set; }
     public int BlinkingTurns { get; set; }
 
+    public IEnumerable<string> GetKnownUnitNames() => _unitOwners.Keys;
+
+    public IReadOnlyCollection<int> GetOwnersOf(string? unitName)
+    {
+        if (string.IsNullOrWhiteSpace(unitName))
+        {
+            return Array.Empty<int>();
+        }
+
+        return _unitOwners.TryGetValue(unitName.Trim(), out var owners) && owners.Count > 0
+            ? owners
+            : Array.Empty<int>();
+    }
+
+    public void UpdateKnownUnits(SnapshotTablero? snapshot)
+    {
+        _unitOwners.Clear();
+        RegisterUnits(snapshot?.J1Slots, playerId: 1);
+        RegisterUnits(snapshot?.J2Slots, playerId: 2);
+    }
+
     public void ClearOptions() => Options.Clear();
     public void ClearOrder() => Order.Clear();
+
+    private void RegisterUnits(IReadOnlyList<Slot>? slots, int playerId)
+    {
+        if (slots is null) return;
+
+        foreach (var slot in slots)
+        {
+            var name = slot?.Nombre;
+            if (string.IsNullOrWhiteSpace(name)) continue;
+
+            var key = name.Trim();
+            if (!_unitOwners.TryGetValue(key, out var owners))
+            {
+                owners = new HashSet<int>();
+                _unitOwners[key] = owners;
+            }
+
+            owners.Add(playerId);
+        }
+    }
 }
 
 internal sealed class GuiPlayerState
