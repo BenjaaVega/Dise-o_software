@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Model\\Shin-Megami-Tensei-Model.csproj",
+      "projectUniqueName": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Model\\Shin-Megami-Tensei-Model.csproj",
       "projectName": "Shin-Megami-Tensei-Model",
-      "projectPath": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Model\\Shin-Megami-Tensei-Model.csproj",
+      "projectPath": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Model\\Shin-Megami-Tensei-Model.csproj",
       "packagesPath": "C:\\Users\\Benji\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Model\\obj\\",
+      "outputPath": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Model\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Benji\\AppData\\Roaming\\NuGet\\NuGet.Config"

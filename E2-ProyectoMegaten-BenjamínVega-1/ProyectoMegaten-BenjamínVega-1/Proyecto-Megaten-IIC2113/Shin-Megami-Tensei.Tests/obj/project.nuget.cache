@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "lEpJ909Kpg8=",
+  "dgSpecHash": "zdYyrbBkaKA=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei.Tests\\Shin-Megami-Tensei.Tests.csproj",
+  "projectFilePath": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei.Tests\\Shin-Megami-Tensei.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Benji\\.nuget\\packages\\coverlet.collector\\6.0.2\\coverlet.collector.6.0.2.nupkg.sha512",
     "C:\\Users\\Benji\\.nuget\\packages\\microsoft.codecoverage\\17.11.1\\microsoft.codecoverage.17.11.1.nupkg.sha512",

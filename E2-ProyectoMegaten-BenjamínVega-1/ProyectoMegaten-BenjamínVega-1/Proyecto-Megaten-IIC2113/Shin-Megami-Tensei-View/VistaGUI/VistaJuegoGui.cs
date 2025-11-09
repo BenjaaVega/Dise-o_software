@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading;
 using Shin_Megami_Tensei_Model.Combate;
 using Shin_Megami_Tensei_Model.ModelosEquipo;
 using Shin_Megami_Tensei_Model.Presentacion.VistaModelos;
@@ -21,7 +20,6 @@ public sealed class VistaJuegoGui : IVistaJuego
     private readonly List<OptionEntry> _currentOptions = new();
     private readonly Dictionary<string, OptionEntry> _optionLookup = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _sync = new();
-    private bool _notifiedGuiFailure;
 
     public VistaJuegoGui(View? fallbackView = null)
     {
@@ -37,13 +35,12 @@ public sealed class VistaJuegoGui : IVistaJuego
             _gui = _library.CreateGui();
             _state = new GuiStateModel();
         }
-        catch (Exception ex)
+        catch
         {
             _library = null;
             _factory = null;
             _gui = null;
             _state = null;
-            NotifyGuiUnavailable(ex);
         }
     }
 
@@ -418,8 +415,6 @@ public sealed class VistaJuegoGui : IVistaJuego
                         return match.Value;
                 }
             }
-
-            Thread.Sleep(50);
         }
     }
 
@@ -437,46 +432,6 @@ public sealed class VistaJuegoGui : IVistaJuego
         if (!IsGuiReady) return;
         if (string.IsNullOrWhiteSpace(message)) return;
         _library!.ShowMessage(_gui!, message);
-    }
-
-    private void NotifyGuiUnavailable(Exception exception)
-    {
-        if (_notifiedGuiFailure)
-        {
-            return;
-        }
-
-        _notifiedGuiFailure = true;
-
-        const string baseMessage =
-            "No se pudo cargar la librería gráfica SMTGUI. Se continuará con la vista de consola.";
-        TryWriteError(baseMessage);
-
-        var detail = exception?.Message;
-        if (!string.IsNullOrWhiteSpace(detail))
-        {
-            TryWriteError($"Detalle: {detail}");
-        }
-
-        TryWriteError(
-            "Verifica que la carpeta GuiLIB contenga SMTGUI.dll o define SMTGUI_LIB/SMTGUI_DIR con la ruta correspondiente.");
-    }
-
-    private static void TryWriteError(string message)
-    {
-        if (string.IsNullOrWhiteSpace(message))
-        {
-            return;
-        }
-
-        try
-        {
-            Console.Error.WriteLine(message);
-        }
-        catch
-        {
-            // Ignoramos fallas al escribir en el flujo de error.
-        }
     }
 
     private void Refresh()
