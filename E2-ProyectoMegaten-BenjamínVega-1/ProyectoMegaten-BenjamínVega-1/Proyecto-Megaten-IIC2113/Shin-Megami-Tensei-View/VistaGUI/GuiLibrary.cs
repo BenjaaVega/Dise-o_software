@@ -176,16 +176,58 @@ internal sealed class GuiLibrary
     private static IEnumerable<string> EnumerateFromBase(string start)
     {
         var dir = new DirectoryInfo(start);
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         while (dir is not null)
         {
-            var guiDir = Path.Combine(dir.FullName, "GuiLIB");
-            if (Directory.Exists(guiDir))
+            foreach (var candidate in EnumerateGuiDirectories(dir))
             {
-                foreach (var path in EnumerateDlls(guiDir))
+                var full = Path.GetFullPath(candidate);
+                if (!visited.Add(full))
+                {
+                    continue;
+                }
+
+                foreach (var path in EnumerateDlls(full))
                     yield return path;
             }
 
             dir = dir.Parent;
+        }
+    }
+
+    private static IEnumerable<string> EnumerateGuiDirectories(DirectoryInfo? dir)
+    {
+        if (dir is null)
+            yield break;
+
+        string direct = Path.Combine(dir.FullName, "GuiLIB");
+        if (Directory.Exists(direct))
+            yield return direct;
+
+        try
+        {
+            foreach (var sub in Directory.EnumerateDirectories(dir.FullName, "*", SearchOption.TopDirectoryOnly))
+            {
+                var name = Path.GetFileName(sub);
+                if (string.Equals(name, "GuiLIB", StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return sub;
+                    continue;
+                }
+
+                if (name.IndexOf("View", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("GUI", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var nested = Path.Combine(sub, "GuiLIB");
+                    if (Directory.Exists(nested))
+                        yield return nested;
+                }
+            }
+        }
+        catch
+        {
+            // Ignoramos excepciones causadas por directorios inaccesibles.
         }
     }
 
