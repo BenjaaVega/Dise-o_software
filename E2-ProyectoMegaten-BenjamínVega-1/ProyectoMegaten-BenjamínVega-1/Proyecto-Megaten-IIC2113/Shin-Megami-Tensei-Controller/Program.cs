@@ -1,4 +1,8 @@
-﻿using Shin_Megami_Tensei_View;
+﻿using System;
+using System.IO;
+using System.Linq;
+using Shin_Megami_Tensei_View;
+using Shin_Megami_Tensei_View.VistaGUI;
 using Shin_Megami_Tensei;
 
 /* 
@@ -21,16 +25,107 @@ using Shin_Megami_Tensei;
  *      var view = View.BuildConsoleView();
  */
 
+var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+if (ShouldUseGui(args))
+{
+    RunGui();
+    return;
+}
 
+RunConsole();
 
-string testFolder = SelectTestFolder();
-string test = SelectTest(testFolder);
-string teamsFolder = testFolder.Replace("-Tests","");
-AnnounceTestCase(test);
+void RunGui()
+{
+    string teamsFolder = ResolveDefaultTeamsFolder();
+    var consoleView = View.BuildConsoleView();
+    var guiView = new VistaGUI.VistaJuegoGui(consoleView);
+    var game = new Game(guiView, teamsFolder);
+    guiView.Run(() => game.Play());
+}
 
-var view = View.BuildManualTestingView(test);
-var game = new Game(view, teamsFolder);
-game.Play();
+void RunConsole()
+{
+    string testFolder = SelectTestFolder();
+    string test = SelectTest(testFolder);
+    string teamsFolder = testFolder.Replace("-Tests","");
+    AnnounceTestCase(test);
+
+    var view = View.BuildManualTestingView(test);
+    var game = new Game(view, teamsFolder);
+    game.Play();
+}
+
+bool ShouldUseGui(string[] cliArgs)
+{
+    var env = Environment.GetEnvironmentVariable("SMT_USE_GUI");
+    if (!string.IsNullOrWhiteSpace(env))
+    {
+        var trimmed = env.Trim();
+        if (string.Equals(trimmed, "0", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trimmed, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.Equals(trimmed, "1", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trimmed, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+    }
+
+    if (cliArgs.Any(arg => string.Equals(arg, "--console", StringComparison.OrdinalIgnoreCase)))
+        return false;
+
+    if (cliArgs.Any(arg => string.Equals(arg, "--gui", StringComparison.OrdinalIgnoreCase)))
+        return true;
+
+    return true;
+}
+
+string ResolveDefaultTeamsFolder()
+{
+    var env = Environment.GetEnvironmentVariable("SMT_TEAMS_FOLDER");
+    if (!string.IsNullOrWhiteSpace(env) && Directory.Exists(env))
+    {
+        return Path.GetFullPath(env);
+    }
+
+    string? dataDir = FindDataDirectory(Directory.GetCurrentDirectory())
+                      ?? FindDataDirectory(AppContext.BaseDirectory);
+
+    if (dataDir is null)
+    {
+        return Directory.GetCurrentDirectory();
+    }
+
+    foreach (var dir in Directory.EnumerateDirectories(dataDir).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+    {
+        if (dir.EndsWith("-Tests", StringComparison.OrdinalIgnoreCase)) continue;
+        if (Directory.EnumerateFiles(dir, "*.txt").Any()) return dir;
+    }
+
+    return dataDir;
+}
+
+string? FindDataDirectory(string? start)
+{
+    if (string.IsNullOrWhiteSpace(start)) return null;
+
+    var dir = new DirectoryInfo(start);
+    while (dir is not null)
+    {
+        var candidate = Path.Combine(dir.FullName, "data");
+        if (Directory.Exists(candidate))
+        {
+            return candidate;
+        }
+
+        dir = dir.Parent;
+    }
+
+    return null;
+}
 
 string SelectTestFolder()
 {

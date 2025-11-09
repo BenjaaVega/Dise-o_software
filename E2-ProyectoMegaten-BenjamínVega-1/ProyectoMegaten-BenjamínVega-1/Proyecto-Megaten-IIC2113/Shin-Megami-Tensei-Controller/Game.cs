@@ -1,6 +1,5 @@
 ﻿using System;
 using Shin_Megami_Tensei_View;
-using Shin_Megami_Tensei_View.VistaGUI;
 using Shin_Megami_Tensei_Model.Combate;
 using Shin_Megami_Tensei_Model.Construccion;
 using Shin_Megami_Tensei_Model.Entrada;
@@ -18,7 +17,7 @@ public class Game
     private readonly string _teamsFolder;
 
     public Game(View view, string teamsFolder)
-        : this(new VistaJuegoGui(view), teamsFolder)
+        : this(new VistaJuegoConsola(view), teamsFolder)
     {
     }
 
