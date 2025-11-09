@@ -1,4 +1,5 @@
 ﻿using Shin_Megami_Tensei_View;
+using Shin_Megami_Tensei_View.VistaGUI;
 using Shin_Megami_Tensei;
 
 /* 
@@ -16,9 +17,9 @@ using Shin_Megami_Tensei;
  *
  * Si, por algún motivo, quieres ejecutar tu programa de modo manual (sin replicar un
  * test case específico), puedes cambiar la línea:
- *      var view = View.BuildManualTestingView(test);
+ *      var fallbackView = View.BuildManualTestingView(test);
  * por:
- *      var view = View.BuildConsoleView();
+ *      var fallbackView = View.BuildConsoleView();
  */
 
 
@@ -28,8 +29,9 @@ string test = SelectTest(testFolder);
 string teamsFolder = testFolder.Replace("-Tests","");
 AnnounceTestCase(test);
 
-var view = View.BuildManualTestingView(test);
-var game = new Game(view, teamsFolder);
+var fallbackView = View.BuildManualTestingView(test);
+IVistaJuego vista = new VistaJuegoGui(fallbackView);
+var game = new Game(vista, teamsFolder);
 game.Play();
 
 string SelectTestFolder()
