@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Shin-Megami-Tensei-View\Shin-Megami-Tensei-View.csproj" />
+      <ProjectReference Include="..\Shin-Megami-Tensei-GUI\Shin-Megami-Tensei-GUI.csproj" />
     </ItemGroup>
 
 </Project>

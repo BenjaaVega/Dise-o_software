@@ -21,6 +21,12 @@ public class Game
         _teamsFolder = teamsFolder;
     }
 
+    public Game(IVistaJuego view, string teamsFolder)
+    {
+        _view = view ?? throw new ArgumentNullException(nameof(view));
+        _teamsFolder = teamsFolder;
+    }
+
     public void Play()
     {
         var parser                 = new ParserArchivoEquipos();

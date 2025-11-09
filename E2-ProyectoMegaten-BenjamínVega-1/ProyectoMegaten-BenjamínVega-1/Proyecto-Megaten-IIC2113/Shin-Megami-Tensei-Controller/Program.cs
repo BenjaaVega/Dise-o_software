@@ -1,36 +1,62 @@
-﻿using Shin_Megami_Tensei_View;
 using Shin_Megami_Tensei;
+using Shin_Megami_Tensei_GUI;
+using Shin_Megami_Tensei_View;
+using Shin_Megami_Tensei_View.Gui;
+using System.Linq;
 
-/* 
- * Este código permite replicar un test case. Primero pregunta por el grupo de test
- * case a replicar. Luego pregunta por el test case específico que se quiere replicar.
- * 
- * Por ejemplo, si tu programa está fallando el test case:
- *      "data/E1-BasicCombat-Tests/006.txt"
- * ... puedes ver qué está ocurriendo mediante correr este programa y decir que quieres
- * replicar del grupo "E1-BasicCombat-Tests" el test case 6.
- * 
- * Al presionar enter, se ingresa el input del test case en forma automática. Si el
- * color es azúl significa que el output de tu programa es el esperado. Si es rojo
- * significa que el output de tu programa es distinto al esperado (i.e., el test falló).
- *
- * Si, por algún motivo, quieres ejecutar tu programa de modo manual (sin replicar un
- * test case específico), puedes cambiar la línea:
- *      var view = View.BuildManualTestingView(test);
- * por:
- *      var view = View.BuildConsoleView();
- */
+if (ShouldUseGui())
+{
+    StartGuiMode();
+}
+else
+{
+    RunTestReplicator();
+}
 
+bool ShouldUseGui()
+{
+    Console.WriteLine("¿Quieres iniciar la interfaz gráfica? (s/n)");
+    var answer = Console.ReadLine();
+    if (string.IsNullOrWhiteSpace(answer))
+        return false;
 
+    return answer.Trim().StartsWith("s", StringComparison.OrdinalIgnoreCase);
+}
 
-string testFolder = SelectTestFolder();
-string test = SelectTest(testFolder);
-string teamsFolder = testFolder.Replace("-Tests","");
-AnnounceTestCase(test);
+void StartGuiMode()
+{
+    string teamsFolder = SelectTeamsFolder();
+    var view = new ShinMegamiTenseiGuiView();
+    view.Start(() =>
+    {
+        var game = new Game(view, teamsFolder);
+        game.Play();
+    });
+}
 
-var view = View.BuildManualTestingView(test);
-var game = new Game(view, teamsFolder);
-game.Play();
+string SelectTeamsFolder()
+{
+    Console.WriteLine("¿Qué carpeta de equipos quieres usar?");
+    var dirs = Directory
+        .GetDirectories("data", "*", SearchOption.TopDirectoryOnly)
+        .Where(d => !d.EndsWith("-Tests", StringComparison.OrdinalIgnoreCase))
+        .OrderBy(d => d)
+        .ToArray();
+    ShowArrayOfOptions(dirs);
+    return AskUserToSelectAnOption(dirs);
+}
+
+void RunTestReplicator()
+{
+    string testFolder = SelectTestFolder();
+    string test = SelectTest(testFolder);
+    string teamsFolder = testFolder.Replace("-Tests", "");
+    AnnounceTestCase(test);
+
+    var view = View.BuildManualTestingView(test);
+    var game = new Game(view, teamsFolder);
+    game.Play();
+}
 
 string SelectTestFolder()
 {
@@ -49,7 +75,7 @@ string[] GetAvailableTestsInOrder()
 
 void ShowArrayOfOptions(string[] options)
 {
-    for(int i = 0; i < options.Length; i++)
+    for (int i = 0; i < options.Length; i++)
         Console.WriteLine($"{i}- {options[i]}");
 }
 
@@ -81,7 +107,7 @@ bool IsValueOutsideTheValidRange(int minValue, int value, int maxValue)
 string SelectTest(string testFolder)
 {
     Console.WriteLine("¿Qué test quieres ejecutar?");
-    string[] tests = Directory.GetFiles(testFolder, "*.txt" );
+    string[] tests = Directory.GetFiles(testFolder, "*.txt");
     Array.Sort(tests);
     return AskUserToSelectAnOption(tests);
 }
