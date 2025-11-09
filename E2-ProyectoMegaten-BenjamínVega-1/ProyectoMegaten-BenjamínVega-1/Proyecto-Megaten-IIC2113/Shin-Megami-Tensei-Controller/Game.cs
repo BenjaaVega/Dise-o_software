@@ -1,4 +1,5 @@
-﻿using Shin_Megami_Tensei_View;
+﻿using System;
+using Shin_Megami_Tensei_View;
 using Shin_Megami_Tensei_Model.Combate;
 using Shin_Megami_Tensei_Model.Construccion;
 using Shin_Megami_Tensei_Model.Entrada;
@@ -16,8 +17,13 @@ public class Game
     private readonly string _teamsFolder;
 
     public Game(View view, string teamsFolder)
+        : this(new VistaJuegoConsola(view), teamsFolder)
     {
-        _view = new VistaJuegoConsola(view);
+    }
+
+    public Game(IVistaJuego vistaJuego, string teamsFolder)
+    {
+        _view = vistaJuego ?? throw new ArgumentNullException(nameof(vistaJuego));
         _teamsFolder = teamsFolder;
     }
 

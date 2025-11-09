@@ -1,0 +1,6 @@
+# Ignorar la librería externa pesada
+*
+
+# Conservar este archivo de instrucciones y este .gitignore
+!README.md
+!.gitignore
