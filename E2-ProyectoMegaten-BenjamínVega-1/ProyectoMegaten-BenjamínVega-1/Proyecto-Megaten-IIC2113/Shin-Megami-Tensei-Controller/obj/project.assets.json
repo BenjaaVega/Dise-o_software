@@ -50,11 +50,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Controller\\Shin-Megami-Tensei-Controller.csproj",
+      "projectUniqueName": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Controller\\Shin-Megami-Tensei-Controller.csproj",
       "projectName": "Shin-Megami-Tensei-Controller",
-      "projectPath": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Controller\\Shin-Megami-Tensei-Controller.csproj",
+      "projectPath": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Controller\\Shin-Megami-Tensei-Controller.csproj",
       "packagesPath": "C:\\Users\\Benji\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Controller\\obj\\",
+      "outputPath": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-Controller\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Benji\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -69,8 +69,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-View\\Shin-Megami-Tensei-View.csproj": {
-              "projectPath": "C:\\Users\\Benji\\Desktop\\E1-ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-View\\Shin-Megami-Tensei-View.csproj"
+            "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-View\\Shin-Megami-Tensei-View.csproj": {
+              "projectPath": "\\\\wsl.localhost\\Ubuntu-20.04\\home\\benjitz15\\Dise-o_software\\E2-ProyectoMegaten-BenjamínVega-1\\ProyectoMegaten-BenjamínVega-1\\Proyecto-Megaten-IIC2113\\Shin-Megami-Tensei-View\\Shin-Megami-Tensei-View.csproj"
             }
           }
         }

@@ -6,6 +6,7 @@ using Shin_Megami_Tensei_Model.Entrada;
 using Shin_Megami_Tensei_Model.ModelosEquipo;
 using Shin_Megami_Tensei_Model.Presentacion;
 using Shin_Megami_Tensei_Model.Repositorios;
+using Shin_Megami_Tensei_View.VistaGUI;
 using Shin_Megami_Tensei.Controllers;
 using Shin_Megami_Tensei.Manejo;
 
